@@ -42,12 +42,18 @@ def get_hosts(host_id=-1, addr='', name='', count=50):
 @post('/bw')
 def get_bandwidth():
     global db
-    #print(request.forms.get('xx'))
-    host_id_param = request.forms.get('host_id')
     host_id = -1
-    if host_id_param:
-        host_id = host_id_param
-    bandwidth = db.get_bandwidth_objs(host_id=host_id)
+    start = ''
+    end = ''
+
+    if request.forms.get('start_date'):
+        start = request.forms.get('start_date')
+    if request.forms.get('end_date'):
+        end = request.forms.get('end_date')
+    if request.forms.get('host_id'):
+        host_id = request.forms.get('host_id')
+
+    bandwidth = db.get_bandwidth_objs(host_id=host_id, start=start, end=end)
     response.content_type = 'application/json'
     return json.dumps(bandwidth)
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import sqlite3
+import re
+from datetime import datetime
 
 class DB:
     def __init__(self, test=False, db='database.db'):
@@ -150,16 +152,16 @@ class DB:
                             data)
 
 
-    def get_bandwidth_objs(self, day='', hour=-1, minute=-1, host_id=-1):
+    def get_bandwidth_objs(self, day='', hour=-1, minute=-1, host_id=-1, start='', end=''):
         bandwidth = []
-        for row in self.get_bandwidth(day=day, hour=hour, minute=minute, host_id=host_id):
+        for row in self.get_bandwidth(day=day, hour=hour, minute=minute, host_id=host_id, start=start, end=end):
             bandwidth.append({'date': '%s %02d:%02d' % (row[0], row[1], row[2]),
                               'length': int(row[3]),
                               'count': int(row[4])})
         return bandwidth
 
 
-    def get_bandwidth(self, resolution='minute', day='', hour=-1, minute=-1, host_id=-1):
+    def get_bandwidth(self, resolution='minute', day='', hour=-1, minute=-1, host_id=-1, start='', end=''):
         command = 'select day, hour, minute, sum(length), sum(count) from bw_'+str(resolution)
         constraints = []
         arguments = []
@@ -177,6 +179,17 @@ class DB:
             constraints.append('host_id = (?)')
             arguments.append(host_id)
 
+        if start:
+            (start_sql, start_args) = self.date_to_sql_constraint(start, '>=')
+            if start_sql:
+                constraints.append(start_sql)
+                arguments.extend(start_args)
+        if end:
+            (end_sql, end_args) = self.date_to_sql_constraint(end, '<=')
+            if end_sql:
+                constraints.append(end_sql)
+                arguments.extend(end_args)
+
         if len(constraints) > 0:
             command += ' where '+' and '.join(constraints)
 
@@ -188,4 +201,16 @@ class DB:
     def get_record_count(self):
         command = 'select count(rowid) from bw_minute'
         return self.execute(command)[0][0]
+
+
+    def date_to_sql_constraint(self, date_str='', oper='='):
+        sql = ''
+        args = []
+
+        date_parts = re.findall('([0-9][0-9][0-9]?[0-9]?)[/-]([0-9][0-9]?)[/-]([0-9][0-9]?)', date_str)
+        if date_parts:
+            sql = 'day '+oper+' (?)'
+            args.append('-'.join(date_parts[0]))
+
+        return (sql, args)
 
