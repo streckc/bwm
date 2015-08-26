@@ -29,13 +29,14 @@ Javascript Additions:
   - JQueryUI - http://jqueryui.com/ - place in html/js/jqui
 
 ## To do:
-  - paramaterize utilities, configurize with file, and daemonize
+  - paramaterize utilities
+  - configurize with configuration file
+  - daemonize scripts
+  - move style to seperate application css
   - remove tcpdump requirement with python sniffing
   - post load process to aggregate data to longer term tables
     - average from minute to hour, day
     - allow pull from lower resolution tables for performance
-  - enable date range selection in UI
-    - tie to pulling lower resolution data
   - add archival of data in tables (table maintenance)
   - add archival compression of imported pcaps
   - add removal of archives
