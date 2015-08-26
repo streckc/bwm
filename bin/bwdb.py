@@ -146,6 +146,31 @@ class DB:
         return hosts
 
 
+    def get_host_objs_by_bw(self, start='', end='', count=10):
+        command = 'select hosts.host_id, hosts.addr, hosts.name, hosts.mac, sum(bw_minute.length) as length from hosts join bw_minute using (host_id)'
+        group_by = ' group by host_id order by length desc'
+        constraints = []
+        arguments = []
+
+        if start:
+            (start_sql, start_args) = self.date_to_sql_constraint(start, '>=')
+            if start_sql:
+                constraints.append(start_sql)
+                arguments.extend(start_args)
+        if end:
+            (end_sql, end_args) = self.date_to_sql_constraint(end, '<=')
+            if end_sql:
+                constraints.append(end_sql)
+                arguments.extend(end_args)
+
+        if len(constraints) > 0:
+            hosts = self.execute(command+' where '+' and '.join(constraints)+group_by, arguments)
+        else:
+            hosts = self.execute(command+group_by)
+
+        return hosts[0:count]
+
+
     def add_bandwidth(self, data):
         return self.execute('insert or ignore into bw_minute'
                             ' (day, hour, minute,'

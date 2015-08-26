@@ -58,6 +58,23 @@ def get_bandwidth():
     return json.dumps(bandwidth)
 
 
+@post('/report/top/<count:int>')
+def get_top_host_report(count=10):
+    global db
+    start = ''
+    end = ''
+
+    if request.forms.get('start_date'):
+        start = request.forms.get('start_date')
+    if request.forms.get('end_date'):
+        end = request.forms.get('end_date')
+
+    hosts = db.get_host_objs_by_bw(start=start, end=end, count=count)
+
+    response.content_type = 'application/json'
+    return json.dumps(hosts)
+
+
 @get('/img/<filename>')
 def display_image(filename=''):
     global html_path

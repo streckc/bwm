@@ -26,6 +26,7 @@
     for (x=1; x<=5; x++) {
       update_graph_data(x);
     }
+    update_statistics();
   }
 
 
@@ -97,12 +98,31 @@
   }
 
 
+  function set_graph_select_option(select_num, host_num) {
+    $( '#graph_'+select_num+' option[value="'+host_num+'"]' ).prop('selected', true);
+    update_all_graphs();
+  }
+
   function update_statistics() {
-    $( '#statistics' ).html('<b>statistics coming soon</b>');
+    num = 4;
+    params = {
+              start_date: $( '#start' ).val(),
+              end_date: $( '#end' ).val()
+             }
     $.ajax({
-      type: 'get',
-      url: '/report',
+      type: 'post',
+      url: '/report/top/'+num,
+      data: params,
       success: function( data ) {
+        html = '<table><tr><th colspan="2">Top '+num+' Hosts by Bandwidth</th><th>Mbps</th></tr>'
+        $.each(data, function(obj) {
+          html += '<tr onClick="javascript: set_graph_select_option('+(obj+2)+', '+data[obj][0]+')">';
+          html += '<td>'+data[obj][1]+'</td>'
+          html += '<td>'+data[obj][2]+'</td>'
+          html += '<td style="text-align: right;">'+(data[obj][4]/1024/1024*8/60).toFixed(0)+'</td>'
+          html += '</tr>';
+        });
+        $( '#statistics' ).html(html);
       }
     });
   }
