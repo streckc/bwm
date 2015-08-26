@@ -42,14 +42,37 @@ def get_hosts(host_id=-1, addr='', name='', count=50):
 @post('/bw')
 def get_bandwidth():
     global db
-    #print(request.forms.get('xx'))
-    host_id_param = request.forms.get('host_id')
     host_id = -1
-    if host_id_param:
-        host_id = host_id_param
-    bandwidth = db.get_bandwidth_objs(host_id=host_id)
+    start = ''
+    end = ''
+
+    if request.forms.get('start_date'):
+        start = request.forms.get('start_date')
+    if request.forms.get('end_date'):
+        end = request.forms.get('end_date')
+    if request.forms.get('host_id'):
+        host_id = request.forms.get('host_id')
+
+    bandwidth = db.get_bandwidth_objs(host_id=host_id, start=start, end=end)
     response.content_type = 'application/json'
     return json.dumps(bandwidth)
+
+
+@post('/report/top/<count:int>')
+def get_top_host_report(count=10):
+    global db
+    start = ''
+    end = ''
+
+    if request.forms.get('start_date'):
+        start = request.forms.get('start_date')
+    if request.forms.get('end_date'):
+        end = request.forms.get('end_date')
+
+    hosts = db.get_host_objs_by_bw(start=start, end=end, count=count)
+
+    response.content_type = 'application/json'
+    return json.dumps(hosts)
 
 
 @get('/img/<filename>')
@@ -101,6 +124,8 @@ def init_globals():
     database_path = os.path.realpath(os.path.join(script_path, 'net_mon.db'))
     db = bwdb.DB(db=database_path)
     variables = {'__JQ_JS_PATH__': get_html_path('jq.*.min.js'),
+                 '__JQUI_JS_PATH__': get_html_path('jquery-ui.min.js'),
+                 '__JQUI_CSS_PATH__': get_html_path('jquery-ui.min.css'),
                  '__VIS_JS_PATH__': get_html_path('vis.*.min.js'),
                  '__VIS_CSS_PATH__': get_html_path('vis.*.min.css')}
     update_variables()

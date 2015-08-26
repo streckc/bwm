@@ -1,8 +1,8 @@
 <div id="visualization"></div>
-<div id="graph_config">
-  <input type="text" name="start" id="start" value="__TODAY__" />
+<div id="graph_config" style="float: left;">
+  <input type="text" name="start" id="start" value="__TODAY__" onChange="javascript: update_all_graphs()" />
  to 
-  <input type="text" name="start" id="start" value="__TOMORROW__" />
+  <input type="text" name="end" id="end" value="__TOMORROW__" onChange="javascript: update_all_graphs()" />
 <!-- by 
   <select name="resolution" id="resolution">
     <option value="1m" selected="selected">1 minute</option>
@@ -10,22 +10,33 @@
     <option value="1h">1 hour</option>
     <option value="1d">1 day</option>
   </select>
-</div> -->
-<div id="graph_select">
-  <select name="graph_1" id="graph_1"><option value="-1" selected="selected">All hosts</option></select><br />
+-->
+  <input type="button" name="update" id="update" value="Update" />
+  <br />
+  <select name="graph_1" id="graph_1"><option value="0">None</option><option value="-1" selected="selected">All hosts</option></select><br />
   <select name="graph_2" id="graph_2"><option value="0">None</option></select><br />
   <select name="graph_3" id="graph_3"><option value="0">None</option></select><br />
   <select name="graph_4" id="graph_4"><option value="0">None</option></select><br />
   <select name="graph_5" id="graph_5"><option value="0">None</option></select>
 </div>
+<div id="statistics">
+</div>
 <script type="text/javascript">
+  function update_all_graphs() {
+    for (x=1; x<=5; x++) {
+      update_graph_data(x);
+    }
+    update_statistics();
+  }
+
+
   function update_graph_data(gid) {
     host_id = $( '#graph_'+gid+' option:selected' ).attr('value');
     text = $( '#graph_'+gid+' option:selected' ).text().split(':')[0];
     params = {
               host_id: host_id,
-              start_date: $( '#start' ).attr('value'),
-              end_date: $( '#end' ).attr('value')
+              start_date: $( '#start' ).val(),
+              end_date: $( '#end' ).val()
              }
     if (groups.get(gid)) {
       if (text == 'None') {
@@ -34,13 +45,18 @@
         group = groups.update({ 'id': gid, 'content': text });
       }
     } else if (host_id >= 0) {
-      groups.add({id: gid, content: text, options: {drawPoints: false, shaded: {orientation: 'bottom'}}});
+      if (text != 'None') {
+        groups.add({id: gid, content: text, options: {drawPoints: false, shaded: {orientation: 'bottom'}}});
+      }
     }
-    var new_data = dataset.get({
+    var rm_data = dataset.get({
       filter: function (item) {
-        return (item.group != gid);
+        return (item.group == gid);
       }
     });
+    dataset.remove(rm_data);
+
+   var new_data = []
     $.ajax({
       type: 'post',
       url: '/bw',
@@ -52,8 +68,6 @@
                         y: (data[obj].length/1024/1024*8/60),
                         group: gid});
         }
-
-        dataset.clear();
         dataset.add(new_data);
       }
     });
@@ -84,6 +98,36 @@
   }
 
 
+  function set_graph_select_option(select_num, host_num) {
+    $( '#graph_'+select_num+' option[value="'+host_num+'"]' ).prop('selected', true);
+    update_all_graphs();
+  }
+
+  function update_statistics() {
+    num = 4;
+    params = {
+              start_date: $( '#start' ).val(),
+              end_date: $( '#end' ).val()
+             }
+    $.ajax({
+      type: 'post',
+      url: '/report/top/'+num,
+      data: params,
+      success: function( data ) {
+        html = '<table><tr><th colspan="2">Top '+num+' Hosts by Bandwidth</th><th>Mbps</th></tr>'
+        $.each(data, function(obj) {
+          html += '<tr onClick="javascript: set_graph_select_option('+(obj+2)+', '+data[obj][0]+')">';
+          html += '<td>'+data[obj][1]+'</td>'
+          html += '<td>'+data[obj][2]+'</td>'
+          html += '<td style="text-align: right;">'+(data[obj][4]/1024/1024*8/60).toFixed(0)+'</td>'
+          html += '</tr>';
+        });
+        $( '#statistics' ).html(html);
+      }
+    });
+  }
+
+
   var container = document.getElementById('visualization');
   var dataset = new vis.DataSet();
   var groups = new vis.DataSet();
@@ -93,10 +137,14 @@
   var graph2d = new vis.Graph2d(container, dataset, groups, options);
 
   set_graph_selections();
+  update_statistics();
   update_graph_data(1);
+  $( "#update" ).click(function() { update_all_graphs(); });
   $( "#graph_1" ).change(function() { update_graph_data(1); });
   $( "#graph_2" ).change(function() { update_graph_data(2); });
   $( "#graph_3" ).change(function() { update_graph_data(3); });
   $( "#graph_4" ).change(function() { update_graph_data(4); });
   $( "#graph_5" ).change(function() { update_graph_data(5); });
+  $( "#start" ).datepicker({ dateFormat: "yy-mm-dd" });
+  $( "#end" ).datepicker({ dateFormat: "yy-mm-dd" });
 </script>

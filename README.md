@@ -24,8 +24,9 @@ Python Modules:
   - pypacker - https://github.com/mike01/pypacker
 
 Javascript Additions:
-  - JQuery - http://jquery.com/ - place in html/js/jq
   - Vis.js - http://visjs.org/ - place in html/js/vis
+  - JQuery - http://jquery.com/ - place in html/js/jq
+  - JQueryUI - http://jqueryui.com/ - place in html/js/jqui
 
 ## To do:
   - paramaterize utilities, configurize with file, and daemonize
