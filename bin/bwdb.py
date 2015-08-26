@@ -107,8 +107,8 @@ class DB:
 
 
     def get_hosts(self, host_id=-1, addr='', name='', mac='', count=-1):
-        command = 'select hosts.host_id, hosts.addr, hosts.name, hosts.mac, max(bw_minute.count) as count from hosts join bw_minute using (host_id)'
-        group_by = ' group by host_id'
+        command = 'select host_id, addr, name, mac from hosts'
+        group_by = ''
         constraints = []
         arguments = []
 
@@ -125,6 +125,8 @@ class DB:
             constraints.append('mac like (?)')
             arguments.append('%'+str(mac)+'%')
         if count >= 0:
+            command = 'select hosts.host_id, hosts.addr, hosts.name, hosts.mac, max(bw_minute.count) as count from hosts join bw_minute using (host_id)'
+            group_by = ' group by host_id'
             constraints.append('count > (?)')
             arguments.append(count)
 
