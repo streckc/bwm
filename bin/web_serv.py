@@ -124,6 +124,8 @@ def init_globals():
     database_path = os.path.realpath(os.path.join(script_path, 'net_mon.db'))
     db = bwdb.DB(db=database_path)
     variables = {'__JQ_JS_PATH__': get_html_path('jq.*.min.js'),
+                 '__JQUI_JS_PATH__': get_html_path('jquery-ui.min.js'),
+                 '__JQUI_CSS_PATH__': get_html_path('jquery-ui.min.css'),
                  '__VIS_JS_PATH__': get_html_path('vis.*.min.js'),
                  '__VIS_CSS_PATH__': get_html_path('vis.*.min.css')}
     update_variables()
