@@ -114,11 +114,11 @@
       url: '/report/top/'+num,
       data: params,
       success: function( data ) {
-        html = '<table><tr><th colspan="2">Top '+num+' Hosts by Bandwidth</th><th>Mbps</th></tr>'
+        html = '<table><tr><th colspan="2" style="padding-right: 50px;">Top '+num+' Hosts by Bandwidth</th><th>Mbps</th></tr>'
         $.each(data, function(obj) {
           html += '<tr onClick="javascript: set_graph_select_option('+(obj+2)+', '+data[obj][0]+')">';
           html += '<td>'+data[obj][1]+'</td>'
-          html += '<td>'+data[obj][2]+'</td>'
+          html += '<td>'+data[obj][2].split('.')[0]+'</td>'
           html += '<td style="text-align: right;">'+(data[obj][4]/1024/1024*8/60).toFixed(0)+'</td>'
           html += '</tr>';
         });
