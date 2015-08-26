@@ -44,7 +44,7 @@
       } else {
         group = groups.update({ 'id': gid, 'content': text });
       }
-    } else if (host_id >= 0) {
+    } else {
       if (text != 'None') {
         groups.add({id: gid, content: text, options: {drawPoints: false, shaded: {orientation: 'bottom'}}});
       }
