@@ -152,16 +152,9 @@ class DB:
         constraints = []
         arguments = []
 
-        if start:
-            (start_sql, start_args) = self.date_to_sql_constraint(start, '>=')
-            if start_sql:
-                constraints.append(start_sql)
-                arguments.extend(start_args)
-        if end:
-            (end_sql, end_args) = self.date_to_sql_constraint(end, '<=')
-            if end_sql:
-                constraints.append(end_sql)
-                arguments.extend(end_args)
+        (date_sql, date_args) = self.dates_to_sql_constraint(start, end)
+        constraints.extend(date_sql)
+        arguments.extend(date_args)
 
         if len(constraints) > 0:
             hosts = self.execute(command+' where '+' and '.join(constraints)+group_by, arguments)
@@ -206,21 +199,30 @@ class DB:
             constraints.append('host_id = (?)')
             arguments.append(host_id)
 
-        if start:
-            (start_sql, start_args) = self.date_to_sql_constraint(start, '>=')
-            if start_sql:
-                constraints.append(start_sql)
-                arguments.extend(start_args)
-        if end:
-            (end_sql, end_args) = self.date_to_sql_constraint(end, '<=')
-            if end_sql:
-                constraints.append(end_sql)
-                arguments.extend(end_args)
+        (date_sql, date_args) = self.dates_to_sql_constraint(start, end)
+        constraints.extend(date_sql)
+        arguments.extend(date_args)
 
         if len(constraints) > 0:
             command += ' where '+' and '.join(constraints)
 
         command += ' group by day, hour, minute order by day, hour, minute'
+
+        return self.execute(command, arguments)
+
+    def get_data_summary(self, start='', end=''):
+        command = 'select host_id, sum(length), sum(count) from bw_minute'
+        constraints = []
+        arguments = []
+
+        (date_sql, date_args) = self.dates_to_sql_constraint(start, end)
+        constraints.extend(date_sql)
+        arguments.extend(date_args)
+
+        if len(constraints) > 0:
+            command += ' where '+' and '.join(constraints)
+
+        command += ' group by host_id'
 
         return self.execute(command, arguments)
 
@@ -230,14 +232,28 @@ class DB:
         return self.execute(command)[0][0]
 
 
-    def date_to_sql_constraint(self, date_str='', oper='='):
-        sql = ''
+    def dates_to_sql_constraint(self, start_str='', end_str=''):
+        sql = []
         args = []
 
-        date_parts = re.findall('([0-9][0-9][0-9]?[0-9]?)[/-]([0-9][0-9]?)[/-]([0-9][0-9]?)', date_str)
-        if date_parts:
-            sql = 'day '+oper+' (?)'
-            args.append('-'.join(date_parts[0]))
+        start = self.normalize_date(start_str)
+        if start:
+            sql.append('day >= (?)')
+            args.append(start)
+
+        end = self.normalize_date(end_str)
+        if end:
+            sql.append('day <= (?)')
+            args.append(end)
 
         return (sql, args)
+
+
+    def normalize_date(self, date_str=''):
+        date_parts = re.findall('([0-9][0-9][0-9]?[0-9]?)[/-]([0-9][0-9]?)[/-]([0-9][0-9]?)', date_str)
+        if date_parts:
+            return '-'.join(date_parts[0])
+        else:
+            return ''
+
 

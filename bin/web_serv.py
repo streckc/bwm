@@ -75,10 +75,34 @@ def get_top_host_report(count=10):
     return json.dumps(hosts)
 
 
+@post('/report/summary')
+def get_summary_report():
+    global db
+    start = ''
+    end = ''
+
+    if request.forms.get('start_date'):
+        start = request.forms.get('start_date')
+    if request.forms.get('end_date'):
+        end = request.forms.get('end_date')
+
+    hosts = db.get_data_summary(start=start, end=end)
+
+    response.content_type = 'application/json'
+    return json.dumps(hosts)
+
+
 @get('/img/<filename>')
 def display_image(filename=''):
     global html_path
     image_path = os.path.join(html_path,'img')
+    return static_file(filename, root=image_path)
+
+
+@get('/css/<filename>')
+def display_image(filename=''):
+    global html_path
+    image_path = os.path.join(html_path,'css')
     return static_file(filename, root=image_path)
 
 
