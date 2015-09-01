@@ -8,7 +8,7 @@ Running on a linux host, that has an interface connected to a shark-tap.  Runnin
 
   - bin/capture.bash - Running tcpdump on the sniffing interface
   - bin/process_pcaps.bash - Script to loop
-  - bin/web_serv.py - Run native bottle web server on port 8123
+  - bin/web_serv.py - Run native flask web server on port 8123
 
 ![Environment Diagram](html/img/environment.png "Environment Diagram")
 
@@ -20,7 +20,7 @@ General:
   - tcpdump
 
 Python Modules:
-  - bottle - http://bottlepy.org/
+  - flask - http://flask.pocoo.org/
   - pypacker - https://github.com/mike01/pypacker
 
 Javascript Additions:
