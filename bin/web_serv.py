@@ -114,7 +114,7 @@ def display_js(path=''):
 
 
 @app.errorhandler(404)
-def error405(error):
+def error404(error):
     return 'xxx '+str(error)
 
 
