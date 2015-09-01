@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 
-from bottle import get, post, request, response, run, static_file, error
+from flask import Flask, request, Response, send_from_directory
 from datetime import date, timedelta
 import os
 import re
-import json
 import bwdb
+import json
+
+app = Flask(__name__)
 
 
-@get('/')
+@app.route('/', methods=['GET'])
 def main_page():
     global html_path, parameters
     header = ''
@@ -21,12 +23,13 @@ def main_page():
     return page
 
 
-@get('/hosts/<host_id:int>')
-@get('/hosts/<name:re:[0-9a-z_\-\.]+>')
-@get('/hosts/<addr:re:[0-9]{1,3}\.[0-9\.]{5,11}>')
-@get('/hosts')
+#@app.route('/hosts/<host_id:int>', methods=['GET'])
+#@app.route('/hosts/<name:re:[0-9a-z_\-\.]+>', methods=['GET'])
+#@app.route('/hosts/<addr:re:[0-9]{1,3}\.[0-9\.]{5,11}>', methods=['GET'])
+@app.route('/hosts', methods=['GET'])
 def get_hosts(host_id=-1, addr='', name='', count=50):
-    global db
+    global database_path
+    db = bwdb.DB(db=database_path)
     if host_id >= 0:
         hosts = db.get_host_objs(host_id=host_id, count=count)
     elif addr != '':
@@ -35,85 +38,85 @@ def get_hosts(host_id=-1, addr='', name='', count=50):
         hosts = db.get_host_objs(name=name, count=count)
     else:
         hosts = db.get_host_objs(count=count)
-    response.content_type = 'application/json'
-    return json.dumps(hosts)
+    return Response(json.dumps(hosts),  mimetype='application/json')
 
 
-@post('/bw')
+@app.route('/bw', methods=['POST'])
 def get_bandwidth():
-    global db
+    global database_path
+    db = bwdb.DB(db=database_path)
     host_id = -1
     start = ''
     end = ''
 
-    if request.forms.get('start_date'):
-        start = request.forms.get('start_date')
-    if request.forms.get('end_date'):
-        end = request.forms.get('end_date')
-    if request.forms.get('host_id'):
-        host_id = request.forms.get('host_id')
+    if request.form.get('start_date'):
+        start = request.form.get('start_date')
+    if request.form.get('end_date'):
+        end = request.form.get('end_date')
+    if request.form.get('host_id'):
+        host_id = request.form.get('host_id')
 
+    print(str(start)+' '+str(end))
     bandwidth = db.get_bandwidth_objs(host_id=host_id, start=start, end=end)
-    response.content_type = 'application/json'
-    return json.dumps(bandwidth)
+    return Response(json.dumps(bandwidth),  mimetype='application/json')
 
 
-@post('/report/top/<count:int>')
+@app.route('/report/top/<int:count>', methods=['POST'])
 def get_top_host_report(count=10):
-    global db
+    global database_path
+    db = bwdb.DB(db=database_path)
     start = ''
     end = ''
 
-    if request.forms.get('start_date'):
-        start = request.forms.get('start_date')
-    if request.forms.get('end_date'):
-        end = request.forms.get('end_date')
+    if request.form.get('start_date'):
+        start = request.form.get('start_date')
+    if request.form.get('end_date'):
+        end = request.form.get('end_date')
 
     hosts = db.get_host_objs_by_bw(start=start, end=end, count=count)
 
-    response.content_type = 'application/json'
-    return json.dumps(hosts)
+    return Response(json.dumps(hosts),  mimetype='application/json')
 
 
-@post('/report/summary')
+@app.route('/report/summary', methods=['POST'])
 def get_summary_report():
-    global db
+    global database_path
+    db = bwdb.DB(db=database_path)
     start = ''
     end = ''
 
-    if request.forms.get('start_date'):
-        start = request.forms.get('start_date')
-    if request.forms.get('end_date'):
-        end = request.forms.get('end_date')
+    if request.form.get('start_date'):
+        start = request.form.get('start_date')
+    if request.form.get('end_date'):
+        end = request.form.get('end_date')
 
     hosts = db.get_data_summary(start=start, end=end)
 
-    response.content_type = 'application/json'
-    return json.dumps(hosts)
+    return Response(json.dumps(hosts),  mimetype='application/json')
 
 
-@get('/img/<filename>')
+@app.route('/img/<filename>', methods=['GET'])
 def display_image(filename=''):
     global html_path
     image_path = os.path.join(html_path,'img')
-    return static_file(filename, root=image_path)
+    return send_from_directory(image_path, filename)
 
 
-@get('/css/<filename>')
-def display_image(filename=''):
+@app.route('/css/<filename>', methods=['GET'])
+def display_css(filename=''):
     global html_path
-    image_path = os.path.join(html_path,'css')
-    return static_file(filename, root=image_path)
+    css_path = os.path.join(html_path,'css')
+    return send_from_directory(css_path, filename)
 
 
-@get('/js/<path:path>')
-def display_image(path=''):
+@app.route('/js/<path:path>', methods=['GET'])
+def display_js(path=''):
     global html_path
     js_path = os.path.join(html_path,'js')
-    return static_file(path, root=js_path)
+    return send_from_directory(js_path, path)
 
 
-@error(404)
+@app.errorhandler(404)
 def error405(error):
     return 'xxx '+str(error)
 
@@ -146,7 +149,6 @@ def init_globals():
     script_path = os.path.dirname(os.path.realpath(__file__))
     html_path = os.path.realpath(os.path.join(script_path, '..', 'html'))
     database_path = os.path.realpath(os.path.join(script_path, 'net_mon.db'))
-    db = bwdb.DB(db=database_path)
     variables = {'__JQ_JS_PATH__': get_html_path('jq.*.min.js'),
                  '__JQUI_JS_PATH__': get_html_path('jquery-ui.min.js'),
                  '__JQUI_CSS_PATH__': get_html_path('jquery-ui.min.css'),
@@ -163,5 +165,5 @@ def update_variables():
 
 if __name__ == "__main__":
     init_globals()
-    run(host='', port=8123, debug=True)
+    app.run(host='', port=8123, debug=True)
 
