@@ -56,7 +56,6 @@ def get_bandwidth():
     if request.form.get('host_id'):
         host_id = request.form.get('host_id')
 
-    print(str(start)+' '+str(end))
     bandwidth = db.get_bandwidth_objs(host_id=host_id, start=start, end=end)
     return Response(json.dumps(bandwidth),  mimetype='application/json')
 
