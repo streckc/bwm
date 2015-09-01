@@ -23,19 +23,17 @@ def main_page():
     return page
 
 
-#@app.route('/hosts/<host_id:int>', methods=['GET'])
-#@app.route('/hosts/<name:re:[0-9a-z_\-\.]+>', methods=['GET'])
-#@app.route('/hosts/<addr:re:[0-9]{1,3}\.[0-9\.]{5,11}>', methods=['GET'])
+@app.route('/hosts/<identifier>', methods=['GET'])
 @app.route('/hosts', methods=['GET'])
-def get_hosts(host_id=-1, addr='', name='', count=50):
+def get_hosts(identifier='', count=50):
     global database_path
     db = bwdb.DB(db=database_path)
-    if host_id >= 0:
-        hosts = db.get_host_objs(host_id=host_id, count=count)
-    elif addr != '':
-        hosts = db.get_host_objs(addr=addr, count=count)
-    elif name != '':
-        hosts = db.get_host_objs(name=name, count=count)
+    if re.match('^[0-9]+$', identifier):
+        hosts = db.get_host_objs(host_id=int(identifier), count=count)
+    elif re.match('^[0-9]{1,3}\.[0-9\.]{5,11}$', identifier):
+        hosts = db.get_host_objs(addr=identifier, count=count)
+    elif re.match('^[0-9a-z_\-\.]+$', identifier):
+        hosts = db.get_host_objs(name=identifier, count=count)
     else:
         hosts = db.get_host_objs(count=count)
     return Response(json.dumps(hosts),  mimetype='application/json')
