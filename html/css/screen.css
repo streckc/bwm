@@ -1,0 +1,12 @@
+
+#controls { border: 1px solid gray; padding:5px; }
+#statistics { border: 1px solid gray; padding: 5px; }
+#stat_title { padding-right: 50px; }
+#summary { border: 1px solid gray; padding: 5px; }
+
+.num { text-align: right; }
+
+.footer_tag { font-size: 75%; text-align: right; }
+
+table { width: 100%; }
+td { vertical-align: top; }
