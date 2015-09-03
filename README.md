@@ -6,8 +6,7 @@ Started as a learning experiment and wanting to know what has been consuming the
 ## Environment
 Running on a linux host, that has an interface connected to a shark-tap.  Running the scripts in tmux for now.
 
-  - bin/capture.bash - Running tcpdump on the sniffing interface
-  - bin/process_pcaps.bash - Script to loop
+  - bin/sniffer.py - Run as root to sniff interface and load databsae
   - bin/web_serv.py - Run native flask web server on port 8123
 
 ![Environment Diagram](html/img/environment.png "Environment Diagram")
@@ -17,11 +16,9 @@ Running on a linux host, that has an interface connected to a shark-tap.  Runnin
 General:
   - python3 (may work on 2.7+, but has not been tested)
   - sqlite3
-  - tcpdump
 
 Python Modules:
   - flask - http://flask.pocoo.org/
-  - pypacker - https://github.com/mike01/pypacker
 
 Javascript Additions:
   - Vis.js - http://visjs.org/ - place in html/js/vis
@@ -29,12 +26,12 @@ Javascript Additions:
   - JQueryUI - http://jqueryui.com/ - place in html/js/jqui
 
 ## To do:
+  - sniffer log to file
+  - sniffer save updates to file (backup)
   - paramaterize utilities
   - configurize with configuration file
   - daemonize scripts
-  - remove tcpdump requirement with python sniffing
   - post load process to aggregate data to longer term tables
     - average from minute to hour, day
     - allow pull from lower resolution tables for performance
   - add archival of data in tables (table maintenance)
-  - add removal of archives
