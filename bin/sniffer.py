@@ -150,6 +150,7 @@ if __name__ == "__main__":
         ip_sniff.recv()
     except:
         insert_data_into_db(data['timestamp'], data['hosts'])
+        ip_sniff.remove_promisc()
 
     log_msg('Done.')
 
