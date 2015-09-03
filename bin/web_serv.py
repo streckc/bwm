@@ -162,5 +162,5 @@ def update_variables():
 
 if __name__ == "__main__":
     init_globals()
-    app.run(host='', port=8321, debug=True)
+    app.run(host='', port=8123, debug=True)
 
