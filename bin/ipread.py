@@ -1,10 +1,12 @@
 # Tweaked from from https://askldjd.wordpress.com/2014/01/15/a-reasonably-fast-python-ip-sniffer/
-# to remove any outgoing logic.  Sniffer meant to run on a monitor interface only.b
+# - remove any outgoing logic as use for reading incoming only
+# - removed scapy dependency
 
-import socket, struct, os, array
-from scapy.all import ETH_P_ALL
-from scapy.all import select
-from scapy.all import MTU
+import socket
+import struct
+
+ETH_P_ALL = 0x0003
+MTU = 32767
  
 class IPSniff:
  
