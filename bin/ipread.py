@@ -4,7 +4,11 @@
 
 import socket
 import struct
+import fcntl
 
+SIOCGIFFLAGS = 0x8913
+SIOCSIFFLAGS = 0x8914
+IFF_PROMISC = 0x100
 ETH_P_ALL = 0x0003
 MTU = 32767
  
@@ -12,16 +16,31 @@ class IPSniff:
  
     def __init__(self, interface_name, on_ip_incoming):
  
-        self.interface_name = interface_name
         self.on_ip_incoming = on_ip_incoming
+        self.interface_name = interface_name
+        self.interface_bytes = str.encode(interface_name)
+
  
-        # The raw in (listen) socket is a L2 raw socket that listens
-        # for all packets going through a specific interface.
         self.ins = socket.socket(
             socket.AF_PACKET, socket.SOCK_RAW, socket.htons(ETH_P_ALL))
+
+        ifreq = fcntl.ioctl(self.ins, SIOCGIFFLAGS, struct.pack('256s', self.interface_bytes))
+        (self.current_flags,) = struct.unpack('16xH', ifreq[:18])
+
+        self.add_promisc()
         self.ins.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2**30)
         self.ins.bind((self.interface_name, ETH_P_ALL))
+
  
+    def add_promisc(self):
+        self.current_flags |= IFF_PROMISC
+        fcntl.ioctl(self.ins, SIOCSIFFLAGS, struct.pack('4s12xH', self.interface_bytes, self.current_flags))
+
+    def remove_promisc(self):
+        self.current_flags ^= IFF_PROMISC
+        fcntl.ioctl(self.ins, SIOCSIFFLAGS, struct.pack('4s12xH', self.interface_bytes, self.current_flags))
+
+
     def __process_ipframe(self, pkt_type, eth_header, ip_header):
  
         eth_src = ':'.join('{:02x}'.format(c) for c in eth_header[0])
