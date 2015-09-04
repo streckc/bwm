@@ -2,7 +2,7 @@
 
 import sqlite3
 import re
-from datetime import datetime
+from datetime import date, datetime, timedelta
 
 class DB:
     def __init__(self, test=False, db='database.db'):
@@ -210,6 +210,7 @@ class DB:
 
         return self.execute(command, arguments)
 
+
     def get_data_summary(self, start='', end=''):
         command = 'select host_id, sum(length), sum(count) from bw_minute'
         constraints = []
@@ -256,4 +257,78 @@ class DB:
         else:
             return ''
 
+
+    def summarize_hour_data(self, day='', hour=''):
+        sql = 'insert into bw_hour select day, hour, host_id, sum(length), sum(count) from bw_minute'
+        args = []
+        constraints = []
+        if day:
+            constraints.append('day = (?)')
+            args.append(day)
+        if hour:
+            constraints.append('hour = (?)')
+            args.append(hour)
+        if constraints:
+            sql += ' where '+' and '.join(constraints)
+        sql += ' group by day, hour, host_id'
+        self.delete_from_bw(table='hour', day=day, hour=hour)
+        self.execute(sql, args)
+
+
+    def summarize_data(self, day='', hour=''):
+        last_day = (date.today() - timedelta(7)).strftime('%Y-%m-%d')
+        last_day = (date.today() - timedelta(7)).strftime('%Y-%m-%d %H')
+
+        last_rows = self.execute('select max(day) from bw_day order by day desc limit 1')
+        if last_rows:
+            last_day = last_rows[0][0]
+        while str(last_day) < str(day):
+            self.summarize_day_data(last_day)
+            last_day = (datetime.strptime(last_day, '%Y-%m-%d') + timedelta(1)).strftime('%Y-%m-%d')
+
+
+        last_rows = self.execute('select day, max(hour) from bw_hour group by day order by day desc limit 1')
+        if last_rows:
+            (last_day, last_hour) = last_rows[0]
+            last_hour = "{} {:0>2}".format(last_rows[0][0], last_rows[0][1])
+        curr_hour = "{} {:0>2}".format(day, int(hour))
+        while last_hour < curr_hour:
+            (pass_day, pass_hour) = last_hour.split(' ')
+            self.summarize_hour_data(pass_day, pass_hour)
+            last_hour = (datetime.strptime(last_hour, '%Y-%m-%d %H') + timedelta(hours=1)).strftime('%Y-%m-%d %H')
+
+
+    def summarize_day_data(self, day=''):
+        sql = 'insert into bw_day select day, host_id, sum(length), sum(count) from bw_minute'
+        args = []
+        constraints = []
+        if day:
+            constraints.append('day = (?)')
+            args.append(day)
+        if constraints:
+            sql += ' where '+' and '.join(constraints)
+        sql += ' group by day, host_id'
+        self.delete_from_bw(table='day', day=day)
+        self.execute(sql, args)
+
+
+    def delete_from_bw(self, table='', day='', hour=''):
+        if not table:
+            return
+
+        sql = 'delete from bw_'+str(table)
+        constraints = []
+        args = []
+
+        if day:
+            constraints.append('day = (?)')
+            args.append(day)
+        if hour:
+            constraints.append('hour = (?)')
+            args.append(hour)
+
+        if constraints:
+            sql += ' where '+' and '.join(constraints)
+
+        self.execute(sql, args)
 

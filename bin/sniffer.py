@@ -71,6 +71,9 @@ def insert_data_into_db(timestamp, metrics):
     length = 0
     count = 0
     (day, hour, minute) = timestamp.split('|')
+
+    db.summarize_data(day, hour)
+
     for host_id in metrics:
         new_data.append((day, hour, minute, host_id, metrics[host_id]['length'], metrics[host_id]['count']))
         hosts += 1
@@ -79,6 +82,7 @@ def insert_data_into_db(timestamp, metrics):
     log_msg('adding: day='+str(day)+' '+str(hour)+':'+str(minute)+', hosts='+str(hosts)+', count='+str(count)+', length='+str(length))
 
     db.add_bandwidth(new_data)
+
 
 def process_packet(eth_src, eth_dst, ip_src, ip_dst, ip_len):
     global ip_filter, hosts
@@ -112,7 +116,6 @@ def init_globals(args):
     data = {'timestamp': '', 'hosts': {}}
     db = bwdb.DB(db=args.database)
     hosts = init_hosts()
-
 
 
 def parse_args():
