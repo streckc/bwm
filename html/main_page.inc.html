@@ -1,9 +1,9 @@
 <div id="visualization"></div>
 <table><tr>
 <td id="controls">
-    <input type="text" name="start" id="start" value="__TODAY__" onChange="javascript: update_all_graphs()" />
+    <input type="text" name="start" id="start" value="__TODAY__" />
  to 
-    <input type="text" name="end" id="end" value="__TOMORROW__" onChange="javascript: update_all_graphs()" />
+    <input type="text" name="end" id="end" value="__TOMORROW__" />
     <input type="button" name="update" id="update" value="Update" />
     <br />
     <select name="graph_1" id="graph_1"><option value="0">None</option><option value="-1" selected="selected">All hosts</option></select>
@@ -23,6 +23,14 @@
 <script type="text/javascript">
 function set_to_none(gid) {
     $( '#graph_'+gid+' option[value="0"]' ).prop('selected', true);
+    update_all_graphs();
+}
+
+
+function update_date_range() {
+    options['start'] = $( '#start' ).val();
+    options['end'] = $( '#end' ).val();
+    graph2d.setOptions(options);
     update_all_graphs();
 }
 
@@ -182,7 +190,9 @@ function init_ui() {
     $( "#graph_4" ).change(function() { update_graph_data(4); });
     $( "#graph_5" ).change(function() { update_graph_data(5); });
     $( "#start" ).datepicker({ dateFormat: "yy-mm-dd" });
+    $( "#start" ).change(function() { update_date_range(); });
     $( "#end" ).datepicker({ dateFormat: "yy-mm-dd" });
+    $( "#end" ).change(function() { update_date_range(); });
 }
 
 
