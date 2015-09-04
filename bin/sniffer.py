@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 from ipread import IPSniff
-from datetime import datetime
-import bwdb
+from datetime import datetime, date, timedelta
 from utils import log_msg
+from bwdb import DB
 import argparse
 import os
 import socket
@@ -46,7 +46,7 @@ def add_to_data(host_id, length):
 
 
 def insert_data_into_db(timestamp, metrics):
-    global db
+    global db, last_day, last_hour
 
     if not timestamp:
         return
@@ -57,7 +57,13 @@ def insert_data_into_db(timestamp, metrics):
     count = 0
     (day, hour, minute) = timestamp.split('|')
 
-    db.summarize_data(day, hour)
+    if last_hour != hour:
+        db.summarize_hour_data(last_day, last_hour)
+        last_hour = hour
+
+    if last_day != day:
+        db.summarize_day_data(last_day)
+        last_day = day
 
     for host_id in metrics:
         new_data.append((day, hour, minute, host_id, metrics[host_id]['length'], metrics[host_id]['count']))
@@ -93,14 +99,16 @@ def init_hosts():
 
 
 def init_globals(args):
-    global app_root, data, ip_filter, hosts, db
+    global app_root, data, ip_filter, hosts, db, last_day, last_hour
     app_path = os.path.dirname(os.path.realpath(__file__))
     app_root = os.path.realpath(os.path.join(app_path, '..'))
 
     ip_filter = args.filter
     data = {'timestamp': '', 'hosts': {}}
-    db = bwdb.DB(db=args.database)
+    db = DB(db=args.database)
     hosts = init_hosts()
+    last_day = (date.today() - timedelta(hours=1)).strftime('%Y-%m-%d')
+    last_hour = (date.today() - timedelta(hours=1)).strftime('%H')
 
 
 def parse_args():
