@@ -6,16 +6,27 @@
     <input type="text" name="end" id="end" value="__TOMORROW__" onChange="javascript: update_all_graphs()" />
     <input type="button" name="update" id="update" value="Update" />
     <br />
-    <select name="graph_1" id="graph_1"><option value="0">None</option><option value="-1" selected="selected">All hosts</option></select><br />
-    <select name="graph_2" id="graph_2"><option value="0">None</option></select><br />
-    <select name="graph_3" id="graph_3"><option value="0">None</option></select><br />
-    <select name="graph_4" id="graph_4"><option value="0">None</option></select><br />
+    <select name="graph_1" id="graph_1"><option value="0">None</option><option value="-1" selected="selected">All hosts</option></select>
+    <span class="click-button" onclick="javascript: set_to_none(1);">X</span><br />
+    <select name="graph_2" id="graph_2"><option value="0">None</option></select>
+    <span class="click-button" onclick="javascript: set_to_none(2);">X</span><br />
+    <select name="graph_3" id="graph_3"><option value="0">None</option></select>
+    <span class="click-button" onclick="javascript: set_to_none(3);">X</span><br />
+    <select name="graph_4" id="graph_4"><option value="0">None</option></select>
+    <span class="click-button" onclick="javascript: set_to_none(4);">X</span><br />
     <select name="graph_5" id="graph_5"><option value="0">None</option></select>
+    <span class="click-button" onclick="javascript: set_to_none(5);">X</span>
 </td>
 <td id="statistics"></td>
 <td id="summary"></td>
 </tr></table>
 <script type="text/javascript">
+function set_to_none(gid) {
+    $( '#graph_'+gid+' option[value="0"]' ).prop('selected', true);
+    update_all_graphs();
+}
+
+
 function update_all_graphs() {
     for (x=1; x<=5; x++) {
         update_graph_data(x);
@@ -113,11 +124,14 @@ function update_statistics() {
             html = '<table><tr><th colspan="2" id="stat_title">';
             html += 'Top '+num+' Hosts by Bandwidth</th><th>Mbps</th></tr>'
             $.each(data, function(obj) {
-                html += '<tr onClick="javascript: set_graph_select_option';
-                html += '('+(obj+2)+', '+data[obj][0]+')">';
-                html += '<td>'+data[obj][1]+'</td>'
-                html += '<td>'+data[obj][2].split('.')[0]+'</td>'
-                html += '<td class="num">'+bpm_to_mbps(data[obj][4]).toFixed(0)+'</td>'
+                html += '<tr>';
+                html += '<td>';
+                html += '<span class="click-button" onClick="javascript: ';
+                html += 'set_graph_select_option('+(obj+2)+', '+data[obj][0]+')">&lt;- </span>';
+                html += data[obj][1];
+                html += '</td>';
+                html += '<td>'+data[obj][2].split('.')[0]+'</td>';
+                html += '<td class="num">'+bpm_to_mbps(data[obj][4]).toFixed(0)+'</td>';
                 html += '</tr>';
             });
             $( '#statistics' ).html(html);
