@@ -8,5 +8,16 @@
 
 .footer_tag { font-size: 75%; text-align: right; }
 
+.click-button {
+	font-family: sans-serif;
+	font-size: 75%;
+	padding: 0px 5px 0px 5px;
+	color: grey;
+	background-color: lightgrey;
+	border: 1px solid grey;
+	border-radius: 5px;
+	cursor: default;
+}
+
 table { width: 100%; }
 td { vertical-align: top; }
