@@ -299,3 +299,10 @@ class DB:
 
         self.execute(sql, args)
 
+    def get_min_full_day(self):
+        rows = self.execute('select min(day) from bw_minute where hour = "0" and minute = "0"')
+        if rows:
+            return rows[0][0]
+        else:
+            return (date.today()).strftime('%Y-%m-%d')
+

@@ -8,14 +8,6 @@ import os
 import sys
 
 
-def init_hosts():
-    global db
-    hosts = {}
-    for host in db.get_host_objs():
-        hosts[host['addr']] = host
-    return hosts
-
-
 def init_globals(args):
     global app_root, db
     app_path = os.path.dirname(os.path.realpath(__file__))
@@ -33,18 +25,32 @@ def parse_args():
     parser.add_argument('-d', '--database', type=str,
                         default='net_mon.db',
                         help='database')
+    parser.add_argument('-M', '--minute_table', type=int,
+                        default=8,
+                        help='weeks to keep minute table')
+    parser.add_argument('-H', '--hour_table', type=int,
+                        default=26,
+                        help='weeks to keep hour table')
+    parser.add_argument('-D', '--day_table', type=int,
+                        default=520,
+                        help='weeks to keep day table')
 
     return parser.parse_args()
 
 
 def rebuild_table(name=''):
     global db
-    log_msg('rebuild_table: name='+str(name))
+    log_msg('rebuilding table: name='+str(name))
+    day = db.get_min_full_day()
+    db.summarize_data(name, day, compare='>=')
+    log_msg('rebuilding done')
 
 
-def archive_table(name='', day=''):
+def archive_table(name='', weeks=''):
     global db
-    log_msg('archive_table: name='+str(name)+', day='+str(day))
+    day = (date.today() - timedelta(weeks=weeks)).strftime('%Y-%m-%d')
+    log_msg('archiving table: name='+str(name)+', weeks='+str(weeks)+', day='+str(day))
+    log_msg('archiving done')
 
 
 if __name__ == "__main__":
@@ -58,9 +64,9 @@ if __name__ == "__main__":
 
     rebuild_table('hour')
     rebuild_table('day')
-    archive_table('minute', (date.today() - timedelta(days=7)).strftime('%Y-%m-%d'))
-    archive_table('hour', (date.today() - timedelta(weeks=26)).strftime('%Y-%m-%d'))
-    archive_table('day', (date.today() - timedelta(weeks=520)).strftime('%Y-%m-%d'))
+    archive_table('minute', args.minute_table)
+    archive_table('hour', args.hour_table)
+    archive_table('day', args.day_table)
 
     log_msg('Done.')
 
