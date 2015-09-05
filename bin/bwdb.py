@@ -2,7 +2,7 @@
 
 import sqlite3
 import re
-from datetime import date, datetime, timedelta
+from datetime import date
 
 class DB:
     def __init__(self, test=False, db='database.db'):
@@ -258,38 +258,28 @@ class DB:
             return ''
 
 
-    def summarize_hour_data(self, day='', hour=''):
-        sql = 'insert into bw_hour select day, hour, host_id, sum(length), sum(count) from bw_minute'
+    def summarize_data(self, name='', day='', hour='', compare='='):
+        fields = ['day']
+        if name == 'hour':
+            fields.append('hour')
+
+        sql = 'insert into bw_'+str(name)+' select '+', '.join(fields)+', host_id, sum(length), sum(count) from bw_minute'
         args = []
         constraints = []
         if day:
-            constraints.append('day = (?)')
+            constraints.append('day '+str(compare)+' (?)')
             args.append(day)
         if hour:
-            constraints.append('hour = (?)')
+            constraints.append('hour '+str(compare)+' (?)')
             args.append(hour)
         if constraints:
             sql += ' where '+' and '.join(constraints)
-        sql += ' group by day, hour, host_id'
-        self.delete_from_bw(table='hour', day=day, hour=hour)
+        sql += ' group by '+', '.join(fields)+', host_id'
+        self.delete_from_bw(table=name, day=day, hour=hour, compare=compare)
         self.execute(sql, args)
 
 
-    def summarize_day_data(self, day=''):
-        sql = 'insert into bw_day select day, host_id, sum(length), sum(count) from bw_minute'
-        args = []
-        constraints = []
-        if day:
-            constraints.append('day = (?)')
-            args.append(day)
-        if constraints:
-            sql += ' where '+' and '.join(constraints)
-        sql += ' group by day, host_id'
-        self.delete_from_bw(table='day', day=day)
-        self.execute(sql, args)
-
-
-    def delete_from_bw(self, table='', day='', hour=''):
+    def delete_from_bw(self, table='', day='', hour='', compare='='):
         if not table:
             return
 
@@ -298,10 +288,10 @@ class DB:
         args = []
 
         if day:
-            constraints.append('day = (?)')
+            constraints.append('day '+str(compare)+' (?)')
             args.append(day)
         if hour:
-            constraints.append('hour = (?)')
+            constraints.append('hour '+str(compare)+' (?)')
             args.append(hour)
 
         if constraints:

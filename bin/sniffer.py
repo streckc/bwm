@@ -58,11 +58,11 @@ def insert_data_into_db(timestamp, metrics):
     (day, hour, minute) = timestamp.split('|')
 
     if last_hour != hour:
-        db.summarize_hour_data(last_day, last_hour)
+        db.summarize_data('hour', last_day, last_hour)
         last_hour = hour
 
     if last_day != day:
-        db.summarize_day_data(last_day)
+        db.summarize_data('day', last_day)
         last_day = day
 
     for host_id in metrics:
