@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from flask import Flask, request, Response, send_from_directory
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import os
 import re
 import bwdb
@@ -46,6 +46,7 @@ def get_bandwidth():
     host_id = -1
     start = ''
     end = ''
+    scope = 'auto'
 
     if request.form.get('start_date'):
         start = request.form.get('start_date')
@@ -53,8 +54,27 @@ def get_bandwidth():
         end = request.form.get('end_date')
     if request.form.get('host_id'):
         host_id = request.form.get('host_id')
+    if request.form.get('scope'):
+        scope = request.form.get('scope')
 
-    bandwidth = db.get_bandwidth_objs(host_id=host_id, start=start, end=end)
+    if scope == 'auto':
+        start_date = datetime.strptime(db.get_min_full_day(), '%Y-%m-%d')
+        end_date = date.today() + timedelta(days=1)
+        if start:
+            start_date = datetime.strptime(start, '%Y-%m-%d')
+        if end:
+            end_date = datetime.strptime(end, '%Y-%m-%d')
+
+        diff = end_date - start_date
+        if diff.days > 4*7:
+            scope = 'day'
+        elif diff.days > 1*7:
+            scope = 'hour'
+        else:
+            scope = 'minute'
+        print(str(start_date - end_date)+' '+str(diff.days))
+
+    bandwidth = db.get_bandwidth_objs(host_id=host_id, start=start, end=end, scope=scope)
     return Response(json.dumps(bandwidth),  mimetype='application/json')
 
 
