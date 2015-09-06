@@ -70,9 +70,9 @@ if __name__ == "__main__":
 
     rebuild_table('hour')
     rebuild_table('day')
-    archive_table('minute', args.minute_table)
-    archive_table('hour', args.hour_table)
-    archive_table('day', args.day_table)
+    #archive_table('minute', args.minute_table)
+    #archive_table('hour', args.hour_table)
+    #archive_table('day', args.day_table)
 
     log_msg('Done.')
 
