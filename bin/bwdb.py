@@ -14,7 +14,6 @@ class DB:
         self.conn.isolation_level = None
         self.conn.text_factory = str
         self.db = db
-        self.create_tables()
 
 
     def execute(self, command, arguments=[]):

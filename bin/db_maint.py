@@ -38,6 +38,12 @@ def parse_args():
     return parser.parse_args()
 
 
+def create_tables():
+    global db
+    log_msg('creating tables')
+    db.create_tables()
+
+
 def rebuild_table(name=''):
     global db
     log_msg('rebuilding table: name='+str(name))
