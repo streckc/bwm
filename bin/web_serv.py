@@ -39,27 +39,24 @@ def get_hosts(identifier='', count=50):
     return Response(json.dumps(hosts),  mimetype='application/json')
 
 
-@app.route('/bw', methods=['POST'])
+@app.route('/bw', methods=['POST', 'GET'])
 def get_bandwidth():
     global database_path
     db = bwdb.DB(db=database_path)
-    host_id = -1
-    start = ''
-    end = ''
-    scope = 'auto'
 
-    if request.form.get('start_date'):
-        start = request.form.get('start_date')
-    if request.form.get('end_date'):
-        end = request.form.get('end_date')
-    if request.form.get('host_id'):
-        host_id = request.form.get('host_id')
-    if request.form.get('scope'):
-        scope = request.form.get('scope')
+    if request.method == 'GET':
+        params = request.args
+    else:
+        params = request.form
+
+    start = params.get('start_date', '')
+    end = params.get('end_date', '')
+    host_id = params.get('host_id', -1)
+    scope = params.get('scope', 'auto')
 
     if scope == 'auto':
         start_date = datetime.strptime(db.get_min_full_day(), '%Y-%m-%d')
-        end_date = date.today() + timedelta(days=1)
+        end_date = datetime.now() + timedelta(days=1)
         if start:
             start_date = datetime.strptime(start, '%Y-%m-%d')
         if end:
@@ -72,10 +69,10 @@ def get_bandwidth():
             scope = 'hour'
         else:
             scope = 'minute'
-        print(str(start_date - end_date)+' '+str(diff.days))
 
     bandwidth = db.get_bandwidth_objs(host_id=host_id, start=start, end=end, scope=scope)
-    return Response(json.dumps(bandwidth),  mimetype='application/json')
+    data = {'scope': scope, 'data': bandwidth}
+    return Response(json.dumps(data),  mimetype='application/json')
 
 
 @app.route('/report/top/<int:count>', methods=['POST'])

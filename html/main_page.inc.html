@@ -76,13 +76,14 @@ function update_graph_data(gid) {
         url: '/bw',
         data: params,
         success: function( data ) {
-            var bandwidth = []
-            for (obj in data) {
-                new_data.push({x: data[obj].date,
-                               y: bpm_to_mbps(data[obj].length),
+            var new_data = []
+            for (obj in data.data) {
+                new_data.push({x: data.data[obj].date,
+                               y: bpm_to_mbps(data.data[obj].length),
                                group: gid});
             }
             dataset.add(new_data);
+            scope = data.scope
         }
     });
 }
@@ -201,6 +202,7 @@ function bpm_to_mbps(bpm) {
 }
 
 
+var scope = 'minute'
 var container = document.getElementById('visualization');
 var dataset = new vis.DataSet();
 var groups = new vis.DataSet();
