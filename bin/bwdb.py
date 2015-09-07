@@ -145,8 +145,8 @@ class DB:
         return hosts
 
 
-    def get_host_objs_by_bw(self, start='', end='', count=10):
-        command = 'select hosts.host_id, hosts.addr, hosts.name, hosts.mac, sum(bw_minute.length) as length from hosts join bw_minute using (host_id)'
+    def get_host_objs_by_bw(self, start='', end='', count=10, scope='minute'):
+        command = 'select hosts.host_id, hosts.addr, hosts.name, hosts.mac, sum(bw_'+scope+'.length) as length from hosts join bw_'+scope+' using (host_id)'
         group_by = ' group by host_id order by length desc'
         constraints = []
         arguments = []
@@ -219,8 +219,8 @@ class DB:
         return self.execute(command, arguments)
 
 
-    def get_data_summary(self, start='', end=''):
-        command = 'select host_id, sum(length), sum(count) from bw_minute'
+    def get_data_summary(self, start='', end='', scope='minute'):
+        command = 'select host_id, sum(length), sum(count) from bw_'+scope
         constraints = []
         arguments = []
 
@@ -307,8 +307,20 @@ class DB:
 
         self.execute(sql, args)
 
-    def get_min_full_day(self):
-        rows = self.execute('select min(day) from bw_minute where hour = "0" and minute = "0"')
+
+    def get_min_full_day(self, table='minute'):
+        columns = []
+        sql = 'select min(day) from bw_'+table
+
+        if table in ['hour', 'minute']:
+            columns.append('hour = "0"')
+        if table in ['minute']:
+            columns.append('minute = "0"')
+
+        if columns:
+            sql += ' where '+' and '.join(columns)
+
+        rows = self.execute(sql)
         if rows:
             return rows[0][0]
         else:

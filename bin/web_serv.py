@@ -53,25 +53,11 @@ def get_bandwidth():
     end = params.get('end_date', '')
     host_id = params.get('host_id', -1)
     scope = params.get('scope', 'auto')
-
     if scope == 'auto':
-        start_date = datetime.strptime(db.get_min_full_day(), '%Y-%m-%d')
-        end_date = datetime.now() + timedelta(days=1)
-        if start:
-            start_date = datetime.strptime(start, '%Y-%m-%d')
-        if end:
-            end_date = datetime.strptime(end, '%Y-%m-%d')
-
-        diff = end_date - start_date
-        if diff.days > 4*7:
-            scope = 'day'
-        elif diff.days > 1*7:
-            scope = 'hour'
-        else:
-            scope = 'minute'
+        scope = get_scope(start, end)
 
     bandwidth = db.get_bandwidth_objs(host_id=host_id, start=start, end=end, scope=scope)
-    data = {'scope': scope, 'data': bandwidth}
+    data = {'scope': scope, 'host_id': host_id, 'start': start, 'end': end, 'data': bandwidth}
     return Response(json.dumps(data),  mimetype='application/json')
 
 
@@ -87,7 +73,8 @@ def get_top_host_report(count=10):
     if request.form.get('end_date'):
         end = request.form.get('end_date')
 
-    hosts = db.get_host_objs_by_bw(start=start, end=end, count=count)
+    scope = get_scope(start, end)
+    hosts = db.get_host_objs_by_bw(start=start, end=end, count=count, scope=scope)
 
     return Response(json.dumps(hosts),  mimetype='application/json')
 
@@ -104,7 +91,8 @@ def get_summary_report():
     if request.form.get('end_date'):
         end = request.form.get('end_date')
 
-    hosts = db.get_data_summary(start=start, end=end)
+    scope = get_scope(start, end)
+    hosts = db.get_data_summary(start=start, end=end, scope=scope)
 
     return Response(json.dumps(hosts),  mimetype='application/json')
 
@@ -145,10 +133,12 @@ def read_html_include(name):
         content = content.replace(key, variables[key])
     return content
 
+
 def get_html_path(glob):
     global html_path
     file_path = get_file_path(html_path, glob)
     return file_path.replace(html_path, '').replace('\\', '/')
+
 
 def get_file_path(path, glob):
     for (root, dirs, files) in os.walk(path):
@@ -158,8 +148,31 @@ def get_file_path(path, glob):
     return ''
 
 
+def get_scope(start, end):
+    global hour_min_day, minute_min_day
+    scope = ''
+
+    start_date = datetime.strptime(minute_min_day, '%Y-%m-%d')
+    end_date = datetime.now() + timedelta(days=1)
+
+    if start:
+        start_date = datetime.strptime(start, '%Y-%m-%d')
+    if end:
+        end_date = datetime.strptime(end, '%Y-%m-%d')
+
+    diff = end_date - start_date
+    if diff.days > 4*7 or start < hour_min_day:
+        scope = 'day'
+    elif diff.days > 1*7 or start < minute_min_day:
+        scope = 'hour'
+    else:
+        scope = 'minute'
+
+    return scope
+
+
 def init_globals():
-    global script_path, html_path, database_path, db, variables
+    global script_path, html_path, database_path, variables, day_min_day, hour_min_day, minute_min_day
     script_path = os.path.dirname(os.path.realpath(__file__))
     html_path = os.path.realpath(os.path.join(script_path, '..', 'html'))
     database_path = os.path.realpath(os.path.join(script_path, 'net_mon.db'))
@@ -169,6 +182,12 @@ def init_globals():
                  '__VIS_JS_PATH__': get_html_path('vis.*.min.js'),
                  '__VIS_CSS_PATH__': get_html_path('vis.*.min.css')}
     update_variables()
+
+    db = bwdb.DB(db=database_path)
+    day_min_day = db.get_min_full_day(table='day')
+    hour_min_day = db.get_min_full_day(table='hour')
+    minute_min_day = db.get_min_full_day(table='minute')
+
 
 def update_variables():
     global variables
