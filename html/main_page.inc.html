@@ -79,7 +79,7 @@ function update_graph_data(gid) {
             var new_data = []
             for (obj in data.data) {
                 new_data.push({x: data.data[obj].date,
-                               y: bpm_to_mbps(data.data[obj].length),
+                               y: bandwidth_to_mbps(data.data[obj].length),
                                group: gid});
             }
             dataset.add(new_data);
@@ -140,7 +140,7 @@ function update_statistics() {
                 html += data[obj][1];
                 html += '</td>';
                 html += '<td>'+data[obj][2].split('.')[0]+'</td>';
-                html += '<td class="num">'+bpm_to_mbps(data[obj][4]).toFixed(0)+'</td>';
+                html += '<td class="num">'+bandwidth_to_mbps(data[obj][4]).toFixed(0)+'</td>';
                 html += '</tr>';
             });
             $( '#statistics' ).html(html);
@@ -169,7 +169,7 @@ function update_summary() {
             });
             html = '<table><tr><th id="stat_title">Summary</th><th></th></tr>';
             html += '<tr><td>Number of hosts</td><td class="num">'+hosts+'</td></tr>';
-            html += '<tr><td>Total bandwidth (Mbps)</td><td class="num">'+bpm_to_mbps(length).toFixed(2)+'</td></tr>';
+            html += '<tr><td>Total bandwidth (Mbps)</td><td class="num">'+bandwidth_to_mbps(length).toFixed(2)+'</td></tr>';
             html += '<tr><td>Count of packets</td><td class="num">'+count+'</td></tr>';
             html += '<tr><td>Avg packet size (bps)</td><td class="num">'+(length/count).toFixed(2)+'</td></tr>';
             html += '</table>';
@@ -197,8 +197,16 @@ function init_ui() {
 }
 
 
-function bpm_to_mbps(bpm) {
-    return bpm/1024/1024*8/60;
+function bandwidth_to_mbps(bandwidth) {
+    kb = bandwidth/1024;
+    mb = kb/1024;
+    time = 60;
+    if (scope == 'hour') {
+        time = 60*60;
+    } else if (scope == 'day') {
+        time = 60*60*24;
+    }
+    return mb/time*8;
 }
 
 
