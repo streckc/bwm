@@ -2,7 +2,7 @@
 
 import sqlite3
 import re
-from datetime import datetime
+from datetime import date
 
 class DB:
     def __init__(self, test=False, db='database.db'):
@@ -14,7 +14,6 @@ class DB:
         self.conn.isolation_level = None
         self.conn.text_factory = str
         self.db = db
-        self.create_tables()
 
 
     def execute(self, command, arguments=[]):
@@ -125,7 +124,7 @@ class DB:
             constraints.append('mac like (?)')
             arguments.append('%'+str(mac)+'%')
         if count >= 0:
-            command = 'select hosts.host_id, hosts.addr, hosts.name, hosts.mac, max(bw_minute.count) as count from hosts join bw_minute using (host_id)'
+            command = 'select hosts.host_id, hosts.addr, hosts.name, hosts.mac, max(bw_day.count) as count from hosts join bw_day using (host_id)'
             group_by = ' group by host_id'
             constraints.append('count > (?)')
             arguments.append(count)
@@ -146,8 +145,8 @@ class DB:
         return hosts
 
 
-    def get_host_objs_by_bw(self, start='', end='', count=10):
-        command = 'select hosts.host_id, hosts.addr, hosts.name, hosts.mac, sum(bw_minute.length) as length from hosts join bw_minute using (host_id)'
+    def get_host_objs_by_bw(self, start='', end='', count=10, scope='minute'):
+        command = 'select hosts.host_id, hosts.addr, hosts.name, hosts.mac, sum(bw_'+scope+'.length) as length from hosts join bw_'+scope+' using (host_id)'
         group_by = ' group by host_id order by length desc'
         constraints = []
         arguments = []
@@ -172,33 +171,42 @@ class DB:
                             data)
 
 
-    def get_bandwidth_objs(self, day='', hour=-1, minute=-1, host_id=-1, start='', end=''):
+    def get_bandwidth_objs(self, day='', hour=-1, minute=-1, host_id=-1, start='', end='', scope='minute'):
         bandwidth = []
-        for row in self.get_bandwidth(day=day, hour=hour, minute=minute, host_id=host_id, start=start, end=end):
-            bandwidth.append({'date': '%s %02d:%02d' % (row[0], row[1], row[2]),
+        for row in self.get_bandwidth(day=day, hour=hour, minute=minute, host_id=host_id, start=start, end=end, scope=scope):
+            bandwidth.append({'date': '%s %02d:%02d' % (row[0], int(row[1]), int(row[2])),
                               'length': int(row[3]),
                               'count': int(row[4])})
         return bandwidth
 
 
-    def get_bandwidth(self, resolution='minute', day='', hour=-1, minute=-1, host_id=-1, start='', end=''):
-        command = 'select day, hour, minute, sum(length), sum(count) from bw_'+str(resolution)
+    def get_bandwidth(self, day='', hour=-1, minute=-1, host_id=-1, start='', end='', scope='minute'):
+        fields = ['day']
         constraints = []
         arguments = []
 
         if day != '':
             constraints.append('day = (?)')
             arguments.append(day)
-        if int(hour) >= 0:
-            constraints.append('hour = (?)')
-            arguments.append(hour)
-        if int(minute) >= 0:
-            constraints.append('minute = (?)')
-            arguments.append(minute)
+        if scope in ['minute', 'hour']:
+            fields.append('hour')
+            if int(hour) >= 0:
+                constraints.append('hour = (?)')
+                arguments.append(hour)
+        if scope in ['minute']:
+            fields.append('minute')
+            if int(minute) >= 0:
+                constraints.append('minute = (?)')
+                arguments.append(minute)
         if int(host_id) >= 0:
             constraints.append('host_id = (?)')
             arguments.append(host_id)
 
+        selects = fields.copy()
+        for x in range(len(fields), 3):
+            selects.append('"00"')
+
+        command = 'select '+', '.join(selects)+', sum(length), sum(count) from bw_'+str(scope)
         (date_sql, date_args) = self.dates_to_sql_constraint(start, end)
         constraints.extend(date_sql)
         arguments.extend(date_args)
@@ -206,12 +214,13 @@ class DB:
         if len(constraints) > 0:
             command += ' where '+' and '.join(constraints)
 
-        command += ' group by day, hour, minute order by day, hour, minute'
+        command += ' group by '+', '.join(fields)+' order by '+', '.join(fields)
 
         return self.execute(command, arguments)
 
-    def get_data_summary(self, start='', end=''):
-        command = 'select host_id, sum(length), sum(count) from bw_minute'
+
+    def get_data_summary(self, start='', end='', scope='minute'):
+        command = 'select host_id, sum(length), sum(count) from bw_'+scope
         constraints = []
         arguments = []
 
@@ -256,4 +265,64 @@ class DB:
         else:
             return ''
 
+
+    def summarize_data(self, name='', day='', hour='', compare='='):
+        fields = ['day']
+        if name == 'hour':
+            fields.append('hour')
+
+        sql = 'insert into bw_'+str(name)+' select '+', '.join(fields)+', host_id, sum(length), sum(count) from bw_minute'
+        args = []
+        constraints = []
+        if day:
+            constraints.append('day '+str(compare)+' (?)')
+            args.append(day)
+        if hour:
+            constraints.append('hour '+str(compare)+' (?)')
+            args.append(hour)
+        if constraints:
+            sql += ' where '+' and '.join(constraints)
+        sql += ' group by '+', '.join(fields)+', host_id'
+        self.delete_from_bw(table=name, day=day, hour=hour, compare=compare)
+        self.execute(sql, args)
+
+
+    def delete_from_bw(self, table='', day='', hour='', compare='='):
+        if not table:
+            return
+
+        sql = 'delete from bw_'+str(table)
+        constraints = []
+        args = []
+
+        if day:
+            constraints.append('day '+str(compare)+' (?)')
+            args.append(day)
+        if hour:
+            constraints.append('hour '+str(compare)+' (?)')
+            args.append(hour)
+
+        if constraints:
+            sql += ' where '+' and '.join(constraints)
+
+        self.execute(sql, args)
+
+
+    def get_min_full_day(self, table='minute'):
+        columns = []
+        sql = 'select min(day) from bw_'+table
+
+        if table in ['hour', 'minute']:
+            columns.append('hour = "0"')
+        if table in ['minute']:
+            columns.append('minute = "0"')
+
+        if columns:
+            sql += ' where '+' and '.join(columns)
+
+        rows = self.execute(sql)
+        if rows:
+            return rows[0][0]
+        else:
+            return (date.today()).strftime('%Y-%m-%d')
 

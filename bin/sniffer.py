@@ -1,29 +1,14 @@
 #!/usr/bin/env python3
 
 from ipread import IPSniff
-from datetime import datetime
-import bwdb
+from datetime import datetime, date, timedelta
+from utils import log_msg
+from bwdb import DB
 import argparse
 import os
 import socket
 import sys
 
-
-
-def log_msg(msg, dev='con', newline=True, date=True):
-    if newline:
-        msg += '\n'
-
-    if date:
-        date = str(datetime.strftime(datetime.now(), "%Y/%m/%d %H:%M:%S"))
-        msg = date+': '+msg
-
-    if dev == 'con':
-        sys.stdout.write(msg)
-        sys.stdout.flush()
-    else:
-        with open(dev,'a') as log_out:
-            log_out.write(msg)
 
 
 def add_host(ip_addr, mac_addr):
@@ -61,7 +46,7 @@ def add_to_data(host_id, length):
 
 
 def insert_data_into_db(timestamp, metrics):
-    global db
+    global db, last_day, last_hour
 
     if not timestamp:
         return
@@ -71,6 +56,15 @@ def insert_data_into_db(timestamp, metrics):
     length = 0
     count = 0
     (day, hour, minute) = timestamp.split('|')
+
+    if last_hour != hour:
+        db.summarize_data('hour', last_day, last_hour)
+        last_hour = hour
+
+    if last_day != day:
+        db.summarize_data('day', last_day)
+        last_day = day
+
     for host_id in metrics:
         new_data.append((day, hour, minute, host_id, metrics[host_id]['length'], metrics[host_id]['count']))
         hosts += 1
@@ -79,6 +73,7 @@ def insert_data_into_db(timestamp, metrics):
     log_msg('adding: day='+str(day)+' '+str(hour)+':'+str(minute)+', hosts='+str(hosts)+', count='+str(count)+', length='+str(length))
 
     db.add_bandwidth(new_data)
+
 
 def process_packet(eth_src, eth_dst, ip_src, ip_dst, ip_len):
     global ip_filter, hosts
@@ -104,15 +99,16 @@ def init_hosts():
 
 
 def init_globals(args):
-    global app_root, data, ip_filter, hosts, db
+    global app_root, data, ip_filter, hosts, db, last_day, last_hour
     app_path = os.path.dirname(os.path.realpath(__file__))
     app_root = os.path.realpath(os.path.join(app_path, '..'))
 
     ip_filter = args.filter
     data = {'timestamp': '', 'hosts': {}}
-    db = bwdb.DB(db=args.database)
+    db = DB(db=args.database)
     hosts = init_hosts()
-
+    last_day = (date.today() - timedelta(hours=1)).strftime('%Y-%m-%d')
+    last_hour = (date.today() - timedelta(hours=1)).strftime('%H')
 
 
 def parse_args():
