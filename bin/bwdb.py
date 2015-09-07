@@ -124,7 +124,7 @@ class DB:
             constraints.append('mac like (?)')
             arguments.append('%'+str(mac)+'%')
         if count >= 0:
-            command = 'select hosts.host_id, hosts.addr, hosts.name, hosts.mac, max(bw_minute.count) as count from hosts join bw_minute using (host_id)'
+            command = 'select hosts.host_id, hosts.addr, hosts.name, hosts.mac, max(bw_day.count) as count from hosts join bw_day using (host_id)'
             group_by = ' group by host_id'
             constraints.append('count > (?)')
             arguments.append(count)
