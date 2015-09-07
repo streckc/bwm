@@ -31,7 +31,6 @@ Javascript Additions:
   - paramaterize utilities
   - configurize with configuration file
   - daemonize scripts
-  - post load process to aggregate data to longer term tables
-    - average from minute to hour, day
-    - allow pull from lower resolution tables for performance
   - add archival of data in tables (table maintenance)
+  - add override selection of data resolution in UI
+  - choice of length vs count in UI
